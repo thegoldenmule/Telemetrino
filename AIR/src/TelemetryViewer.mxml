@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:local="*"
+					   creationComplete="OnCreationComplete(event)">
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			private function OnCreationComplete(event:FlexEvent):void
+			{
+				nativeWindow.maximize();
+				
+				PlotChart.visible = false;
+			}
+			
+			private function OnLoadComplete(event:Event):void {
+				PlotChart.visible = true;
+				
+				var dataProvider:Array = [];
+				
+				var counter:int = 0;
+				var data:String = String(event.target.data);
+				var lines:Array = data.split(/\n/);
+				for each (var point:String in lines) {
+					var values:Array = point.split(",");
+					var xAccel:Number = Number(values[0]);
+					var yAccel:Number = Number(values[1]);
+					
+					// skip outliers...
+					if (xAccel > 6 || yAccel > 6) {
+						continue;
+					}
+					
+					dataProvider.push({
+						"xAccel":xAccel,
+						"yAccel":yAccel,
+						"t":counter++
+					});
+				}
+				
+				PlotChart.dataProvider = dataProvider;
+			}
+			
+			protected function OnLoadClicked(event:MouseEvent):void
+			{
+				// load
+				var file:File = new File();
+				file.addEventListener(Event.SELECT, function(event:Event):void {
+					file.removeEventListener(Event.SELECT, arguments.callee);
+					
+					file.load();
+				});
+				file.addEventListener(Event.COMPLETE, OnLoadComplete, false, 0, true);
+				file.browseForOpen("Select Log");
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Define custom colors for use as plot point fills. -->
+		<mx:SolidColor id="sc1" color="blue" alpha=".3"/>
+		<mx:SolidColor id="sc2" color="red" alpha=".3"/>
+		<mx:SolidColor id="sc3" color="green" alpha=".3"/>
+		
+		<!-- Define custom Strokes. -->
+		<mx:SolidColorStroke id="s1" color="blue" weight="1"/>
+		<mx:SolidColorStroke id="s2" color="red" weight="1"/>
+		<mx:SolidColorStroke id="s3" color="green" weight="1"/>
+	</fx:Declarations>
+	
+	<mx:HBox
+		width="100%"
+		height="20">
+		<mx:Button
+			label="Load"
+			click="OnLoadClicked(event)">
+			
+		</mx:Button>
+	</mx:HBox>
+	
+	<mx:PlotChart id="PlotChart" x="0" y="20" width="100%" height="90%">
+		<mx:series>
+			<mx:PlotSeries
+				xField="t"
+				yField="xAccel"
+				displayName="X-Acceleration"
+				fill="{sc1}"
+				stroke="{s1}"
+				/>
+			<mx:PlotSeries
+				xField="t"
+				yField="yAccel"
+				displayName="Y-Acceleration"
+				fill="{sc2}"
+				stroke="{s2}"
+				/>
+		</mx:series>
+	</mx:PlotChart>
+	
+	<mx:Legend x="0" y="{PlotChart.y + PlotChart.height}" dataProvider="{PlotChart}"/>
+</s:WindowedApplication>
